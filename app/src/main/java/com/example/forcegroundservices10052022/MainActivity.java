@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -21,16 +22,17 @@ public class MainActivity extends AppCompatActivity {
         mBtnStartServices.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent=new Intent(MainActivity.this,MyServices.class);
-                intent.putExtra("myIntent","Hello");
+                Intent intent = new Intent(MainActivity.this,MyServices.class);
+                intent.putExtra("text","hello");
                 startService(intent);
+                //Log.d("BBB","Hello");
             }
         });
 
         mBtnStopServices.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                Intent intent=new Intent(MainActivity.this, MyServices.class);
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this,MyServices.class);
                 stopService(intent);
             }
         });

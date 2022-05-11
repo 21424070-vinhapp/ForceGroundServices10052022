@@ -3,20 +3,36 @@ package com.example.forcegroundservices10052022;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-public class MyServices extends Service {
 
-    String CHANNEL_ID="My Channel";
+import java.util.Random;
+
+class MyServices extends Service {
+
+    String CHANNEL_ID = "My Channel";
+
     NotificationManager mNotificationManager;
     Notification mNotification;
-    //chi su dung khi dung bound service
+    boolean isRunning = false;
+    Random mRandom;
+    int value = 0;
+    Handler mHandler;
+    boolean isStop = false;
+    Thread thread;
+    // chỉ sử dụng khi dùng bound service
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -27,47 +43,77 @@ public class MyServices extends Service {
     public void onCreate() {
         super.onCreate();
         Log.d("BBB", "onCreate");
-        mNotification=createNotification();
-        mNotificationManager= (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        startForeground(1,mNotification);
+        mNotification = createNotification("Thông báo", "Bắt đầu tải xuống");
+        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mRandom = new Random();
+        mHandler = new Handler(Looper.getMainLooper());
+        startForeground(1, mNotification);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
-//        Log.d("BBB",Thread.currentThread().getName());
-//        new Handler().postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                stopSelf();
-//            }
-//        },5000);
-        //return super.onStartCommand(intent, flags, startId);
-        if(intent!=null)
-        {
-            String text=intent.getStringExtra("myIntent");
-            Log.d("BBB","Data recived: "+text);
+        if (!isRunning) {
+            thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    isRunning = true;
+                    while (value <= 100000000 && !isStop) {
+                        value += randomProgress();
+                        Log.d("BBB", value + "");
+                    }
+                    mHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isStop) {
+                                mNotification = createProgressNotification("Đang tải về", "", value);
+                                mNotificationManager.notify(1, mNotification);
+                            }
+                        }
+                    }, 0);
+                }
+            });
+            thread.start();
         }
-        Log.d("BBB","OnStartCommand");
+        Log.d("BBB","TRONG NAY");
         return START_REDELIVER_INTENT;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d("BBB", "onDetroy");
+        isStop = true;
+        if (thread != null){
+            thread = null;
+        }
+        Log.d("BBB", "onDestroy");
     }
 
-
-    private Notification createNotification()
-    {
-        NotificationCompat.Builder builder=new NotificationCompat.Builder(MyServices.this,CHANNEL_ID);
+    private Notification createNotification(String title, String contextText) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(MyServices.this, CHANNEL_ID);
+        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher));
         builder.setSmallIcon(android.R.drawable.ic_menu_add);
         builder.setShowWhen(true);
-        builder.setContentTitle("Ung dung co phien ban moi");
-        builder.setContentText("Ban co muon cap nhat khong");
-        builder.setPriority(NotificationCompat.PRIORITY_MAX);
+        builder.setContentTitle(title);
+        builder.setContentText(contextText);
+        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
         return builder.build();
+    }
+
+    private Notification createProgressNotification(String title, String contextText, int progress) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(MyServices.this, CHANNEL_ID);
+        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher));
+        builder.setSmallIcon(android.R.drawable.ic_menu_add);
+        builder.setShowWhen(true);
+        builder.setContentTitle(title);
+        builder.setContentText(contextText);
+        builder.setProgress(100000000, progress, false);
+        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        return builder.build();
+    }
+
+    private int randomProgress() {
+        return mRandom.nextInt(10) + 1;
     }
 }
